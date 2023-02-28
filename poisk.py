@@ -1,5 +1,5 @@
 from tkinter import *
-
+import math
 global entry_phi, entry_dist, entry_alfa, entryp, entryd, entrya
 entry_phi = 0
 entry_dist = 0
@@ -33,9 +33,11 @@ def Entry_param():
 #Функция записи переменных и их счет
 def start():
     global entry_phi, entry_dist, entry_alfa
-    entry_phi = int(entryp.get())
-    entry_dist = int(entryd.get())
-    entry_alfa = int(entrya.get())
+    entry_phi = float(entryp.get())
+    entry_phi = math.radians(entry_phi)
+    print(entry_phi)
+    entry_dist = float(entryd.get())
+    entry_alfa = float(entrya.get())
     #Result = entry_dist+entry_alfa+entry_phi
     #lbl = Label(text = Result, bg = '#FFF', font = ('Times New Roman', 15))
     #lbl.place(x = 150, y = 600)
@@ -51,13 +53,15 @@ def Draw():
     y2_gidr = 500
     canvas.create_oval([x1_gidr, y1_gidr], [x2_gidr, y2_gidr], fill = 'blue')
     #Координаты цели
-    x1_cel = 400
-    y1_cel = 100
-    x2_cel = 410
-    y2_cel = 110
+    x_cel_gidr = math.sin(entry_phi)*entry_dist
+    y_cel_gidr = math.cos(entry_phi)*entry_dist
+    x1_cel = x1_gidr + x_cel_gidr
+    y1_cel = y1_gidr - y_cel_gidr
+    x2_cel = x2_gidr + x_cel_gidr
+    y2_cel = y2_gidr - y_cel_gidr
     canvas.create_rectangle(x1_cel, y1_cel, x2_cel, y2_cel, fill = 'blue')
     canvas.create_line(x1_gidr, y1_gidr, x1_cel, y1_cel, width = 2, fill = 'yellow')
-    #print(x1_cel, y1_cel, x2_cel, y2_cel)
+    print(x1_cel, y2_cel, x2_cel, y2_cel)
 
 root.geometry('750x700')
 root.resizable(False, False)
