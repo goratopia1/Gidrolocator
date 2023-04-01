@@ -1,3 +1,4 @@
+import random
 from tkinter import *
 from tkinter import ttk
 
@@ -21,34 +22,33 @@ def Entry_param():
     entryp = Entry()
     entryp.insert(0, '45')
     entryp.place(x = 550, y = 50)
-    lblp = Label(text = 'Введите пеленг', bg = '#FFF', font = ('Times New Roman', 15))
-    lblp.place(x = 550, y = 80)
+    lblp = Label(text = 'Введите пеленг', bg = '#FFF', font = ('Times New Roman', 15)).place(x = 550, y = 80)
     #Ввод дистанции
     entryd = Entry()
     entryd.insert(0, '300')
     entryd.place(x = 550, y = 110)
-    lbld = Label(text = 'Введите дистанцию до цели', bg = '#FFF', font = ('Times New Roman', 15))
-    lbld.place(x = 550, y = 140)
+    lbld = Label(text = 'Введите дистанцию до цели', bg = '#FFF', font = ('Times New Roman', 15)).place(x = 550, y = 140)
     #Ввод угла альфа
     entrya = Entry()
     entrya.insert(0, '0')
     entrya.place(x = 550, y = 170)
-    lbla = Label(text = 'Введите угол движения цели', bg = '#FFF', font = ('Times New Roman', 15))
-    lbla.place(x = 550, y = 200)
+    lbla = Label(text = 'Введите угол движения цели', bg = '#FFF', font = ('Times New Roman', 15)).place(x = 550, y = 200)
 
     #Выбор типа сигнала и цели
-    signal_select = ttk.Combobox(root, values = ('Непрерывный', 'Импульсный'), state = 'readonly')
-    signal_select.insert(0, 'Непрерывный')
+    signal_select = ttk.Combobox(root, values = ('Активный', 'Пассивный'), state = 'readonly')
     signal_select.place(x = 550, y = 230)
-    target_select = ttk.Combobox(root, values = ('ПЛ', 'Имитатор', 'Облако обломков'), state = 'readonly')
-    target_select.place(x = 550, y = 260)
+    lbls = Label(text = 'Выберите тип обнаружения', bg = '#FFF', font = ('Times New Roman', 15)).place(x = 550,
+                                                                                                       y = 260)
+    target_select = ttk.Combobox(root, values = ('ПЛ', 'Облако обломков', 'Имимтатор'), state = 'readonly')
+    target_select.place(x = 550, y = 290)
+    lblt = Label(text = 'Выберите тип цели', bg = '#FFF', font = ('Times New Roman', 15)).place(x = 550, y = 320)
 
     #Кнопка старт для записи переменных, кнопка Draw для отображения результата в окне вывода
-    Button(text = 'Enter', bg = '#FFF', font = ('Times New Roman', 15), command = Enter).place(x = 550, y = 310,
+    Button(text = 'Запись', bg = '#FFF', font = ('Times New Roman', 15), command = Enter).place(x = 550, y = 350,
                                                                                                width = 115, height = 30)
-    Button(text = 'Draw', bg = '#FFF', font = ('Times New Roman', 15), command = Draw).place(x = 550, y = 340,
+    Button(text = 'Рисование', bg = '#FFF', font = ('Times New Roman', 15), command = Draw).place(x = 550, y = 380,
                                                                                                width = 115, height = 30)
-    Button(text = 'Start', bg = '#FFF', font = ('Times New Roman', 15), command = Water).place(x = 550, y = 370,
+    Button(text = 'Старт', bg = '#FFF', font = ('Times New Roman', 15), command = Water).place(x = 550, y = 410,
                                                                                                width = 115, height = 30)
 
 
@@ -64,23 +64,57 @@ def Enter():
     target_type = target_select.get()
 
 def Water():
-    global signal_type
+    global signal_type, target_type, entry_dist, dist
+    Target()
     time = np.arange(0, Tc, 1/fd)
-    if signal_type == 'Непрерывный':
-        signal_left = np.random.randn(time.size)/10
-        signal_right = np.random.randn(time.size)/10
-        delay = entry_dist/1500
-        dt = d/1500 * np.sin(entry_phi)
+    signal_left = np.random.randn(time.size) / 10
+    signal_right = np.random.randn(time.size) / 10
+    delay = entry_dist / 1500
+    dt = d / 1500 * np.sin(entry_phi)
+    if signal_type == 'Активный':
         for i in range(time.size):
-            if time[i] > delay and time[i] < delay + ti:
-                signal_left[i] += np.sin(2 * np.pi * fs * time[i])
-                signal_right[i] += np.sin(2 * np.pi * fs * time[i] - dt)
-
-        plt.plot(time, signal_left, time, signal_right)
-        plt.show(block = False)
-
+            if time[i] > 2*delay and time[i] < 2*delay + ti:
+                    signal_left[i] += 0.8*np.sin(2 * np.pi * fs * time[i])
+                    signal_right[i] += 0.8*np.sin(2 * np.pi * fs * time[i] + dt)
     else:
         print('None')
+
+    plt.plot(time, signal_left, time, signal_right)
+    plt.show(block = False)
+    #Определение расстояния до цели
+    if target_type == 'ПЛ':
+        for t in time:
+            if np.abs(t-2*delay+ti)<1/fd:
+                m_left = np.argmax(signal_left)
+                m_right = np.argmax(signal_right)
+                dist_left = (m_left/fd*1500)/2
+                dist_right = (m_right/fd*1500)/2
+                if dist_left < dist_right:
+                    dist = dist_left
+                else:
+                    dist = dist_right
+    dist = round(dist, 3)
+    label_d = Label(text = 'Дистанция до цели:', bg = '#FFF', font = ('Times New Roman', 15)).place(x = 30, y = 580)
+    label_dist = Label(text = str(dist), bg = '#FFF', font = ('Times New Roman', 15)).place(x = 30, y = 610)
+    label_t = Label(text = 'Тип цели:', bg = '#FFF', font = ('Times New Roman', 15)).place(x = 30, y = 520)
+    label_target = Label(text = str(target_type), bg = '#FFF', font = ('Times New Roman', 15)).place(x = 30, y = 550)
+
+#Формирование бликов цели
+def Target():
+    dist_x = []
+    dist_x.append(0)
+    dist_y = []
+    dist_y.append(0)
+    if  target_type == 'ПЛ':
+        for i in range(1, 7):
+            dist_x.append(dist_x[i-1] + random.randrange(5, 20))
+            dist_y.append(dist_y[i-1] + random.randrange(-5, 5))
+        print(dist_x)
+        print(dist_y)
+    elif target_type == 'Имитатор':
+        print(target_type)
+    elif target_type == 'Облако обломков':
+        print(target_type)
 
 
 def Sonar():
@@ -89,7 +123,7 @@ def Sonar():
     fs = 21000
     ti = 0.1
     d = 0.02
-    Tc = 1
+    Tc = 3
 
 #Функция рисования окна вывода
 def Draw():
