@@ -5,12 +5,13 @@ from tkinter import ttk
 import matplotlib.pyplot as plt
 import numpy as np
 
-global entry_phi, entry_dist, entry_alfa, entryp, entryd, entrya, entry_signal, entry_target, signal_type, target_type
+global entry_phi, entry_dist, entry_alfa, entryp, entryd, entrya, entry_signal, entry_target, signal_type, target_type, c
 global signal_select, target_select
 global fd, fs, ti, Tc, d, signal_left, signal_right
 
 entry_phi = 0
 entry_dist = 0
+c = 1500
 target_type = 'ПЛ'
 
 root = Tk()
@@ -35,11 +36,11 @@ def Entry_param():
     lbla = Label(text = 'Введите угол движения цели', bg = '#FFF', font = ('Times New Roman', 15)).place(x = 550, y = 200)
 
     #Выбор типа сигнала и цели
-    signal_select = ttk.Combobox(root, values = ('Активный', 'Пассивный'), state = 'readonly')
+    signal_select = ttk.Combobox(root, values = ('Активный'), state = 'readonly')
     signal_select.place(x = 550, y = 230)
     lbls = Label(text = 'Выберите тип обнаружения', bg = '#FFF', font = ('Times New Roman', 15)).place(x = 550,
                                                                                                        y = 260)
-    target_select = ttk.Combobox(root, values = ('ПЛ', 'Облако обломков', 'Имимтатор'), state = 'readonly')
+    target_select = ttk.Combobox(root, values = ('ПЛ', 'Облако обломков', 'Имитатор'), state = 'readonly')
     target_select.place(x = 550, y = 290)
     lblt = Label(text = 'Выберите тип цели', bg = '#FFF', font = ('Times New Roman', 15)).place(x = 550, y = 320)
 
@@ -76,31 +77,37 @@ def Water():
             if time[i] > 2*delay and time[i] < 2*delay + ti:
                     signal_left[i] += 0.8*np.sin(2 * np.pi * fs * time[i])
                     signal_right[i] += 0.8*np.sin(2 * np.pi * fs * time[i] + dt)
-    else:
-        print('None')
 
     plt.plot(time, signal_left, time, signal_right)
     plt.show(block = False)
     #Определение расстояния до цели
-    if target_type == 'ПЛ':
-        for t in time:
-            if np.abs(t-2*delay+ti)<1/fd:
-                m_left = np.argmax(signal_left)
-                m_right = np.argmax(signal_right)
-                dist_left = (m_left/fd*1500)/2
-                dist_right = (m_right/fd*1500)/2
-                if dist_left < dist_right:
-                    dist = dist_left
-                else:
-                    dist = dist_right
+    for t in time:
+        if np.abs(t-2*delay+ti)<1/fd:
+            m_left = np.argmax(signal_left)
+            m_right = np.argmax(signal_right)
+            dist_left = (m_left/fd*1500)/2
+            dist_right = (m_right/fd*1500)/2
+            if dist_left < dist_right:
+                dist = dist_left
+            else:
+                dist = dist_right
     dist = round(dist, 3)
+    if len(dist_x) < 9 and len(dist_y) < 9:
+        target_type = 'ПЛ'
+    elif len(dist_x) < 20 and len(dist_y) < 20:
+        target_type = 'Имитатор'
+    else:
+        target_type = 'Облако обломков'
     label_d = Label(text = 'Дистанция до цели:', bg = '#FFF', font = ('Times New Roman', 15)).place(x = 30, y = 580)
     label_dist = Label(text = str(dist), bg = '#FFF', font = ('Times New Roman', 15)).place(x = 30, y = 610)
     label_t = Label(text = 'Тип цели:', bg = '#FFF', font = ('Times New Roman', 15)).place(x = 30, y = 520)
+    label_target = Label(text = '                                 ',
+                         bg = '#FFF', font = ('Times New Roman', 15)).place(x = 30, y = 550)
     label_target = Label(text = str(target_type), bg = '#FFF', font = ('Times New Roman', 15)).place(x = 30, y = 550)
 
 #Формирование бликов цели
 def Target():
+    global dist_x, dist_y
     dist_x = []
     dist_x.append(0)
     dist_y = []
@@ -109,21 +116,23 @@ def Target():
         for i in range(1, 7):
             dist_x.append(dist_x[i-1] + random.randrange(5, 20))
             dist_y.append(dist_y[i-1] + random.randrange(-5, 5))
-        print(dist_x)
-        print(dist_y)
     elif target_type == 'Имитатор':
-        print(target_type)
+        for i in range(1, 10):
+            dist_x.append(dist_x[i - 1] + random.randrange(5, 30))
+            dist_y.append(dist_y[i - 1] + random.randrange(0, 1))
     elif target_type == 'Облако обломков':
-        print(target_type)
-
+        for i in range(1, 27):
+            dist_x.append(dist_x[i - 1] + random.randrange(1, 40))
+            dist_y.append(dist_y[i - 1] + random.randrange(-10, 10))
 
 def Sonar():
     global fd, fs, ti, Tc, d
-    fd = 80000
-    fs = 21000
+    fd = 40
+    fs = 10
     ti = 0.1
     d = 0.02
     Tc = 3
+
 
 #Функция рисования окна вывода
 def Draw():
